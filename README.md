@@ -44,9 +44,21 @@ spec:
             - "--timeout=100"
             - "http://some.url.example.com"
             - "http://another.url.example.com"
+            - "http://${EXAMPLE_DYNAMIC_HOST}:${EXAMPLE_DYNAMIC_PORT}"
             - "--timeout=10"
-            - "http://the.last.url.example.com"
-```
+            - "http://the.last.url.example.com" 
+          env:
+            - name: EXAMPLE_DYNAMIC_HOST
+              valueFrom:
+                configMapKeyRef:
+                  #...
+            - name: EXAMPLE_DYNAMIC_PORT
+              valueFrom:
+                configMapKeyRef:
+                  #...
+``` 
+
+*NOTE:* any usage of `${NAME}` will be attempted to be expanded from the environment by `wait-for-url`. This is important as the container doesn't have a shell to perform shell expansion for you. This is not full featured shell expansion, just super simple expansion.
 
 ## Release instructions
 
@@ -54,6 +66,6 @@ To release:
 
 ```
 mvn release:clean git-timestamp:setup-release release:prepare release:perform
-git reset --hard origin/master
+git reset --hard HEAD^^
 git push origin --tags
 ```

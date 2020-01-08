@@ -8,12 +8,45 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Arrays;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class WaitForUrl {
 
-    public static void main(String... urls) {
+    private static String expandEnv(String str) {
+        int index = str.indexOf("${");
+        if (index == -1) {
+            return str;
+        }
+        StringBuilder result = new StringBuilder(str.length());
+        int pos = 0;
+        while (index != -1) {
+            int closing = str.indexOf('}', index);
+            if (closing == -1) {
+                result.append(str.substring(pos));
+                return result.toString();
+            } else {
+                result.append(str.substring(pos, index));
+                String name = str.substring(index + 2, closing);
+                final String value = System.getenv(name);
+                if (value == null) {
+                    result.append(str.substring(index, closing + 1));
+                } else {
+                    result.append(value);
+                }
+                pos = closing + 1;
+                index = str.indexOf("${", pos);
+            }
+        }
+        result.append(str.substring(pos));
+        return result.toString();
+    }
+
+    public static void main(String... args) {
+        List<String> urls = Arrays.stream(args).map(WaitForUrl::expandEnv).collect(Collectors.toList());
         // check for help and sanity check
         boolean haveUrl = false;
         boolean emptyOk = false;
@@ -44,7 +77,7 @@ public class WaitForUrl {
             System.exit(1);
         }
         int timeout = 300;
-        Iterator<String> iterator = Arrays.asList(urls).iterator();
+        Iterator<String> iterator = urls.iterator();
         while (iterator.hasNext()) {
             String urlString = iterator.next();
             if (urlString.startsWith("http://") || urlString.startsWith("https://")) {
