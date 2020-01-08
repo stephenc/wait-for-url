@@ -1,29 +1,18 @@
-FROM maven:3.6.3-jdk-11-openj9 as package
+FROM ekidd/rust-musl-builder:1.39.0-openssl11 AS build
 
-COPY pom.xml /tmp/
-COPY src /tmp/src/
-WORKDIR /tmp/
-RUN mvn package
+COPY Cargo.toml Cargo.lock ./
+COPY src/ ./src/
+ARG VERSION
+RUN set -xe ; \
+    test -z "$VERSION" || sed -i -e "/\[package]/,/\[dependencies]/{s/version = \".*\"/version= \"$VERSION\"/}" Cargo.toml ; \
+    cargo install --target x86_64-unknown-linux-musl --path .
 
-# BUILD TIME
-FROM oracle/graalvm-ce:19.3.0-java11 as build
-
-# Build native binary
-RUN gu install native-image
-
-WORKDIR /app
-
-# Copy app
-COPY --from=package /tmp/target/wait-for-url.jar .
-
-RUN native-image --no-server \
-    --static \
-    -H:EnableURLProtocols=http,https \
-    -cp wait-for-url.jar com.github.stephenc.utils.WaitForUrl wait-for-url
-
-# RUNTIME
+# Now for the runtime image
 FROM scratch
 
-COPY --from=build /app/wait-for-url .
-ENTRYPOINT ["./wait-for-url"]
+COPY --from=build  /home/rust/.cargo/bin/wait-for-url /wait-for-url
+
+USER 1000
+
+ENTRYPOINT ["/wait-for-url"]
 CMD ["--help"]

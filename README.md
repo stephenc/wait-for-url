@@ -5,21 +5,18 @@ A command line utility that waits until an URL (or a list of URLs) is ready, i.e
 ## Command line options
 
 ```
-wait-for-url [options] [[--timeout=TIMEOUT] url...]
-
-Waits until all the supplied URLs return HTTP/20x
-When multiple URLs are provided they are checked serially.
+Usage: wait-for-url [options] urls
 
 Options:
-  --help             Show this screen
-  --allow-empty      Exit normally if given an empty list of URLs to check
-  --timeout=TIMEOUT  Changes the timeout for all following URLs to TIMEOUT seconds
-                     (default: 300)
-
-Exit codes:
-  0  All supplied URLs have returned HTTP/20x at least once
-  1  You didn't supply valid command line arguments
-  2  One of the supplied URLs did not return HTTP/20x in the required time.
+    -h, --help          print this help menu and exit
+    -V, --version       print the version and exit
+    -w, --wait SEC      the number of seconds to wait until a successful
+                        response is received, specify a value of 0 to disable
+                        retries (default: 300)
+    -i, --interval MILLISECONDS
+                        the number of milliseconds to wait between attempts
+                        (default: 250)
+    -E, --allow-empty   suppress error if the list of URLs is empty
 ```
 
 ## Example usage
@@ -41,11 +38,10 @@ spec:
           image: stephenc/wait-for-url
           args:
             - "/wait-for-url"                 
-            - "--timeout=100"
+            - "--wait=100"
             - "http://some.url.example.com"
             - "http://another.url.example.com"
             - "http://${EXAMPLE_DYNAMIC_HOST}:${EXAMPLE_DYNAMIC_PORT}"
-            - "--timeout=10"
             - "http://the.last.url.example.com" 
           env:
             - name: EXAMPLE_DYNAMIC_HOST
@@ -64,8 +60,7 @@ spec:
 
 To release:
 
-```
-mvn release:clean git-timestamp:setup-release release:prepare release:perform
-git reset --hard HEAD^^
-git push origin --tags
-```
+* Update version in `./Cargo.toml`
+* Commit
+* Create a tag called `wait-for-url-$VERSION`
+* Push tag and master 
